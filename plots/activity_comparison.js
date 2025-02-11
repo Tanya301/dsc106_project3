@@ -8,38 +8,33 @@ function processActivityData(fem_act, male_act) {
         femaleActivity: 0,
         maleActivity: 0
     }));
-
     // Process female data
     fem_act.forEach((row, index) => {
         const minute = index % 1440;
         const values = Object.values(row).filter(val => !isNaN(val));
         minuteData[minute].femaleActivity += d3.mean(values) || 0;
     });
-
     // Process male data
     male_act.forEach((row, index) => {
         const minute = index % 1440;
         const values = Object.values(row).filter(val => !isNaN(val));
         minuteData[minute].maleActivity += d3.mean(values) || 0;
     });
-
     // Calculate averages
     minuteData.forEach(d => {
         d.femaleActivity /= Math.ceil(fem_act.length / 1440);
         d.maleActivity /= Math.ceil(male_act.length / 1440);
     });
-
     return minuteData;
 }
 
 // Create the visualization
 function createActivityChart(data) {
-    // Set dimensions
+    // dimensions
     const margin = {top: 40, right: 60, bottom: 40, left: 60};
     const width = 800 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
-    // Create SVG
     const svg = d3.select("#activity_comparison")
         .append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -47,7 +42,7 @@ function createActivityChart(data) {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Set scales
+    // scales
     const x = d3.scaleLinear()
         .domain([0, 1439])
         .range([0, width]);
@@ -56,7 +51,7 @@ function createActivityChart(data) {
         .domain([0, d3.max(data, d => Math.max(d.femaleActivity, d.maleActivity))])
         .range([height, 0]);
 
-    // Create lines
+    // lines
     const femaleLine = d3.line()
         .x(d => x(d.minute))
         .y(d => y(d.femaleActivity));
@@ -65,7 +60,6 @@ function createActivityChart(data) {
         .x(d => x(d.minute))
         .y(d => y(d.maleActivity));
 
-    // Add lines
     svg.append("path")
         .datum(data)
         .attr("fill", "none")
@@ -80,7 +74,7 @@ function createActivityChart(data) {
         .attr("stroke-width", 2)
         .attr("d", maleLine);
 
-    // Add axes
+    // axes
     svg.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x)
@@ -90,7 +84,7 @@ function createActivityChart(data) {
     svg.append("g")
         .call(d3.axisLeft(y));
 
-    // Add labels
+    // labels
     svg.append("text")
         .attr("x", width / 2)
         .attr("y", height + 35)
@@ -104,7 +98,7 @@ function createActivityChart(data) {
         .attr("text-anchor", "middle")
         .text("Mean Activity Level");
 
-    // Add title
+    // title
     svg.append("text")
         .attr("x", width / 2)
         .attr("y", -10)
@@ -113,7 +107,7 @@ function createActivityChart(data) {
         .attr("font-weight", "bold")
         .text("Which Gender is More Active?");
 
-    // Add legend
+    // legend
     const legend = svg.append("g")
         .attr("transform", `translate(${width - 100}, 20)`);
 
@@ -141,7 +135,7 @@ function createActivityChart(data) {
         .text("Male");
 }
 
-// When the data is available in global.js
+
 dataLoaded.then(({ fem_act, male_act }) => {
     const processedData = processActivityData(fem_act, male_act);
     createActivityChart(processedData);
