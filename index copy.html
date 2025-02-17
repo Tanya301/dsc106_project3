@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Temperature Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        .slider-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+        }
+        #time-slider {
+            flex-grow: 1;
+            margin: 0 15px;
+            cursor: pointer;
+        }
+        .slider-icon {
+            font-size: 24px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 5px;
+            margin-right: 8px;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            pointer-events: none;
+            font-size: 14px;
+            opacity: 0;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            margin: 0 5px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .slider-label {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mouse Temperature Visualization</h1>
+        <p class="description">Temperature data for male and female mice across 24 hours cycle</p>
+        
+        <div class="controls">
+            <button id="play-btn" class="btn">Play</button>
+            <button id="reset-btn" class="btn">Reset</button>
+        </div>
+        
+        <div class="slider-container">
+            <div class="slider-icon">☀️</div>
+            <input type="range" id="time-slider" min="0" max="1439" value="0">
+            <div class="slider-icon">🌙</div>
+        </div>
+        
+        <div class="slider-label" id="time-label">Time: 00:00 (Light Off)</div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FF6B6B;"></div>
+                <span>Female Mice</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #4D96FF;"></div>
+                <span>Male Mice</span>
+            </div>
+        </div>
+        
+        <div id="chart"></div>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+    
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm";
+        
+        // Setup dimensions
+        const margin = {top: 30, right: 50, bottom: 50, left: 70};
+        const width = 1100 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+        
+        // Create SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        // Define scales
+        const x = d3.scaleLinear()
+            .domain([0, 1439])
+            .range([0, width]);
+        
+        const y = d3.scaleLinear()
+            .domain([35, 39])  // Temperature range
+            .range([height, 0]);
+        
+        // Add X axis
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickFormat(d => formatMinutesToTime(d)))
+            .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-45)");
+        
+        // Add Y axis
+        svg.append("g")
+            .call(d3.axisLeft(y));
+        
+        // Add axis labels
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", width/2)
+            .attr("y", height + margin.bottom - 5)
+            .text("Time of Day");
+        
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left + 20)
+            .attr("x", -height/2)
+            .text("Temperature (°C)");
+        
+        // Extract and process data
+        function processData(femTemp, maleTemp) {
+            // Process female data
+            let femaleData = [];
+            femTemp.forEach(row => {
+                // Skip the first column (minute)
+                Object.keys(row).forEach(col => {
+                    if (col !== "Minute") {
+                        femaleData.push({
+                            minute: +row.Minute,
+                            id: col,
+                            temp: +row[col],
+                            gender: "female"
+                        });
+                    }
+                });
+            });
+            
+            // Process male data
+            let maleData = [];
+            maleTemp.forEach(row => {
+                // Skip the first column (minute)
+                Object.keys(row).forEach(col => {
+                    if (col !== "Minute") {
+                        maleData.push({
+                            minute: +row.Minute,
+                            id: col,
+                            temp: +row[col],
+                            gender: "male"
+                        });
+                    }
+                });
+            });
+            
+            return { femaleData, maleData };
+        }
+        
+        // Function to update chart based on slider
+        function updateChart(minute) {
+            // Clear existing lines
+            svg.selectAll(".temp-line").remove();
+            
+            const windowSize = 120; // 2 hours window
+            const windowStart = Math.max(0, minute - windowSize/2);
+            const windowEnd = Math.min(1439, minute + windowSize/2);
+            
+            // Filter data for the time window
+            const femaleSubset = femaleData.filter(d => d.minute >= windowStart && d.minute <= windowEnd);
+            const maleSubset = maleData.filter(d => d.minute >= windowStart && d.minute <= windowEnd);
+            
+            // Group by ID for females
+            const femaleGroups = d3.group(femaleSubset, d => d.id);
+            const femaleAvg = Array.from({length: windowEnd - windowStart + 1}, (_, i) => {
+                const minute = windowStart + i;
+                const values = femaleSubset.filter(d => d.minute === minute).map(d => d.temp);
+                return {
+                    minute: minute,
+                    temp: d3.mean(values) || null,
+                    gender: "female"
+                };
+            }).filter(d => d.temp !== null);
+            
+            // Group by ID for males
+            const maleGroups = d3.group(maleSubset, d => d.id);
+            const maleAvg = Array.from({length: windowEnd - windowStart + 1}, (_, i) => {
+                const minute = windowStart + i;
+                const values = maleSubset.filter(d => d.minute === minute).map(d => d.temp);
+                return {
+                    minute: minute,
+                    temp: d3.mean(values) || null,
+                    gender: "male"
+                };
+            }).filter(d => d.temp !== null);
+            
+            // Update x-axis domain
+            x.domain([windowStart, windowEnd]);
+            svg.select(".x-axis").call(d3.axisBottom(x).tickFormat(d => formatMinutesToTime(d)));
+            
+            // Line generator
+            const line = d3.line()
+                .x(d => x(d.minute))
+                .y(d => y(d.temp))
+                .defined(d => d.temp !== null);
+            
+            // Add female average line
+            svg.append("path")
+                .datum(femaleAvg)
+                .attr("class", "temp-line")
+                .attr("fill", "none")
+                .attr("stroke", "#FF6B6B")
+                .attr("stroke-width", 3)
+                .attr("d", line);
+            
+            // Add male average line
+            svg.append("path")
+                .datum(maleAvg)
+                .attr("class", "temp-line")
+                .attr("fill", "none")
+                .attr("stroke", "#4D96FF")
+                .attr("stroke-width", 3)
+                .attr("d", line);
+            
+            // Update current time indicator
+            svg.selectAll(".current-time").remove();
+            svg.append("line")
+                .attr("class", "current-time")
+                .attr("x1", x(minute))
+                .attr("y1", 0)
+                .attr("x2", x(minute))
+                .attr("y2", height)
+                .attr("stroke", "black")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5");
+            
+            // Update time label
+            d3.select("#time-label").text(`Time: ${formatMinutesToTime(minute)} (${getLightStatus(minute)})`);
+        }
+        
+        // Format minutes to time string (HH:MM)
+        function formatMinutesToTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+        
+        // Get light status
+        function getLightStatus(minute) {
+            // Lights turn on and off every 12 hours (720 minutes)
+            const hourOfDay = Math.floor(minute / 60) % 24;
+            return (hourOfDay >= 12) ? "Light On" : "Light Off";
+        }
+        
+        // Slider interaction
+        const slider = document.getElementById("time-slider");
+        slider.addEventListener("input", function() {
+            updateChart(+this.value);
+        });
+        
+        // Play/pause functionality
+        let animationId = null;
+        document.getElementById("play-btn").addEventListener("click", function() {
+            if (animationId) {
+                // Stop animation if running
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                this.textContent = "Play";
+            } else {
+                // Start animation
+                this.textContent = "Pause";
+                
+                function animate() {
+                    slider.value = (+slider.value + 1) % 1440;
+                    updateChart(+slider.value);
+                    
+                    if (+slider.value === 1439) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                        document.getElementById("play-btn").textContent = "Play";
+                    } else {
+                        animationId = requestAnimationFrame(animate);
+                    }
+                }
+                
+                animationId = requestAnimationFrame(animate);
+            }
+        });
+        
+        // Reset button
+        document.getElementById("reset-btn").addEventListener("click", function() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                document.getElementById("play-btn").textContent = "Play";
+            }
+            
+            slider.value = 0;
+            updateChart(0);
+        });
+        
+        // Sample data for initial rendering (replace with your actual data)
+        let femaleData = [];
+        let maleData = [];
+        
+        // CSV parsing functions
+        function processFemaleTemp(data) {
+            return data.map(row => {
+                const newRow = {};
+                newRow.Minute = row.Minute !== undefined ? row.Minute : 
+                                (row[""] !== undefined ? row[""] : row[Object.keys(row)[0]]);
+                
+                Object.keys(row).forEach(key => {
+                    if (key !== "Minute" && key !== "" && !key.includes("Unnamed")) {
+                        newRow[key] = row[key];
+                    }
+                });
+                
+                return newRow;
+            });
+        }
+        
+        function processMaleTemp(data) {
+            return data.map(row => {
+                const newRow = {};
+                newRow.Minute = row.Minute !== undefined ? row.Minute : 
+                               (row[""] !== undefined ? row[""] : row[Object.keys(row)[0]]);
+                
+                Object.keys(row).forEach(key => {
+                    if (key !== "Minute" && key !== "" && !key.includes("Unnamed")) {
+                        newRow[key] = row[key];
+                    }
+                });
+                
+                return newRow;
+            });
+        }
+        
+        // Load data
+        Promise.all([
+            d3.csv("./data/Mouse_Data_Student_Copy.xlsx - Fem Temp.csv"),
+            d3.csv("./data/Mouse_Data_Student_Copy.xlsx - Male Temp.csv")
+        ]).then(function([femTempRaw, maleTempRaw]) {
+            // Process the CSV data
+            const femTemp = processFemaleTemp(femTempRaw);
+            const maleTemp = processMaleTemp(maleTempRaw);
+            
+            // Extract and process the data
+            const processedData = processData(femTemp, maleTemp);
+            femaleData = processedData.femaleData;
+            maleData = processedData.maleData;
+            
+            // Initialize chart
+            updateChart(0);
+            
+        }).catch(function(error) {
+            console.error("Error loading the data:", error);
+            // Generate mock data for demonstration if real data fails to load
+            generateMockData();
+            updateChart(0);
+        });
+        
+        // Mock data generator for demonstration
+        function generateMockData() {
+            femaleData = [];
+            maleData = [];
+            
+            for (let minute = 0; minute < 1440; minute++) {
+                // Female temperature with estrus effect
+                const estrusDay = Math.floor(minute / 1440) % 4 === 2;
+                const baseTemp = 36.8 + 0.8 * Math.sin(2 * Math.PI * (minute % 1440) / 1440);
+                const estrusEffect = estrusDay ? 0.3 * Math.sin(4 * Math.PI * (minute % 1440) / 1440) : 0;
+                
+                for (let i = 1; i <= 13; i++) {
+                    femaleData.push({
+                        minute: minute,
+                        id: `f${i}`,
+                        temp: baseTemp + estrusEffect + (Math.random() * 0.4 - 0.2),
+                        gender: "female"
+                    });
+                    
+                    maleData.push({
+                        minute: minute,
+                        id: `m${i}`,
+                        temp: baseTemp + (Math.random() * 0.4 - 0.2),
+                        gender: "male"
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
