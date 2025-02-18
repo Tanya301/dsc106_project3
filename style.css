@@ -123,7 +123,7 @@ nav a.current {
     border-bottom-style: solid;
 }
 
-/* For the current version */
+/* /* For the current version */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -266,4 +266,4 @@ h1 {
 .light-off {
     background-color: #2C3E50;
     color: #fff;
-}
+} */
