@@ -5,6 +5,16 @@
 body {
     font: 100%/1.5 system-ui;
 }
+p {
+    font: 100%/1.5 system-ui;
+    padding-right: 5px;
+    padding-left: 5px;
+ }
+ 
+ 
+ h2 {
+    padding-left: 5px;
+ } 
 
 /* From index.html */
 body {
