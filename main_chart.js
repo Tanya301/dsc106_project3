@@ -48,13 +48,33 @@ svg.append("text")
     .attr("x", -height/2)
     .text("Temperature (°C)");
 
-// Add light/dark cycle background
+// Add light/dark cycle backgrounds
+// Light period (7:00-19:00)
 svg.insert("rect", ":first-child")
     .attr("x", x(420)) // 7:00
     .attr("y", 0)
     .attr("width", x(1140) - x(420)) // 19:00
     .attr("height", height)
     .attr("fill", "#FFEFBE")
+    .attr("opacity", 0.2);
+
+// Dark period (19:00-7:00)
+// Evening (19:00-24:00)
+svg.insert("rect", ":first-child")
+    .attr("x", x(1140)) // 19:00
+    .attr("y", 0)
+    .attr("width", x(1439) - x(1140)) // Until end of day
+    .attr("height", height)
+    .attr("fill", "#E1F5FE")
+    .attr("opacity", 0.2);
+
+// Early morning (00:00-7:00)
+svg.insert("rect", ":first-child")
+    .attr("x", x(0)) // 00:00
+    .attr("y", 0)
+    .attr("width", x(420)) // Until 7:00
+    .attr("height", height)
+    .attr("fill", "#E1F5FE")
     .attr("opacity", 0.2);
 
 // Global data variables

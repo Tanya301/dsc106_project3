@@ -218,3 +218,42 @@ h1 {
     background-color: #333;
     color: white;
 }
+
+
+/* The label part */
+.info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.time-label {
+    text-align: center;
+    font-weight: bold;
+}
+
+.cycle-label {
+    text-align: center;
+}
+
+.light-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.light-on {
+    background-color: #FFD700;
+    color: #000;
+}
+
+.light-off {
+    background-color: #2C3E50;
+    color: #fff;
+}
