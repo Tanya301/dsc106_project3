@@ -116,12 +116,22 @@ nav a.current {
 /* The label part */
 .info-container {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
+    gap: 10px;
     margin: 15px 0;
     padding: 10px;
     background: #f8f9fa;
     border-radius: 4px;
+}
+
+.time-label {
+    text-align: center;
+    font-weight: bold;
+}
+
+.cycle-label {
+    text-align: center;
 }
 
 .light-indicator {
