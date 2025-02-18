@@ -187,7 +187,7 @@ function updateTimeDisplay(minute) {
     const isLightOn = hourOfDay >= 7 && hourOfDay < 19;
     const lightStatus = document.getElementById("light-status");
 
-    lightStatus.textContent = isLightOn ? "Light On" : "Light Off";
+    lightStatus.innerHTML = isLightOn ? "Light On <img src='lights_on.png' alt='Light On'style='width: 13px; vertical-align: middle;'>" : "Light Off  <img src='lights_off.png' alt='Light Off'style='width: 18px; vertical-align: middle;'>";
     lightStatus.className = `light-indicator ${isLightOn ? 'light-on' : 'light-off'}`;
 }
 
