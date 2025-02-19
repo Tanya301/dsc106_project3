@@ -77,6 +77,51 @@ svg.insert("rect", ":first-child")
     .attr("fill", "#E1F5FE")
     .attr("opacity", 0.2);
 
+
+        // Adding Mouse
+        const sliderMouse = document.querySelector('.slider-mouse');
+        const slider = document.getElementById('time-slider');
+        const sliderMouseImage = sliderMouse.querySelector('img');
+        updateSliderMousePosition();
+        // Add light/dark cycle background
+        // Function to update light/dark background
+        function updateSliderMousePosition() {
+            const sliderWidth = slider.offsetWidth;
+            const sliderValue = slider.value;
+            const mouseX = (sliderValue / slider.max) * sliderWidth;
+            sliderMouse.style.left = (slider.offsetLeft + mouseX - 10) + 'px'; // Position icon, adjust -10 if needed
+        }
+
+        // Update slider mouse position on slider input change
+        slider.addEventListener('input', updateSliderMousePosition);
+        // function updateBackground() {
+        //     svg.selectAll(".light-period").remove();
+            
+        //     // Calculate light period rectangles within current window
+        //     const currentDomain = x.domain();
+        //     const start = Math.floor(currentDomain[0] / 1440) * 1440;
+        //     const end = Math.ceil(currentDomain[1] / 1440) * 1440;
+            
+        //     for (let i = start; i < end; i += 1440) {
+        //         // Light period (7:00-19:00)
+        //         const lightStart = i + 420;
+        //         const lightEnd = i + 1140;
+                
+        //         if (lightEnd >= currentDomain[0] && lightStart <= currentDomain[1]) {
+        //             svg.insert("rect", ":first-child")
+        //                 .attr("class", "light-period")
+        //                 .attr("x", x(Math.max(lightStart, currentDomain[0])))
+        //                 .attr("y", 0)
+        //                 .attr("width", x(Math.min(lightEnd, currentDomain[1])) - 
+        //                              x(Math.max(lightStart, currentDomain[0])))
+        //                 .attr("height", height)
+        //                 .attr("fill", "#FFEFBE")
+        //                 .attr("opacity", 0.2);
+        //         }
+        //     }
+        // }
+        
+
 // Global data variables
 let femaleData = [];
 let maleData = [];
@@ -209,7 +254,7 @@ dataLoaded.then(data => {
 });
 
 // Slider interaction
-const slider = document.getElementById("time-slider");
+// const slider = document.getElementById("time-slider");
 slider.addEventListener("input", function() {
     const selectedDay = document.getElementById("day-select").value;
     updateChart(+this.value, selectedDay);
